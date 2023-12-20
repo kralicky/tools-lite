@@ -111,7 +111,7 @@ func ParseDocumentURI(s string) (DocumentURI, error) {
 	}
 
 	if !strings.HasPrefix(s, "file://") {
-		return "", fmt.Errorf("DocumentURI scheme is not 'file': %s", s)
+		return DocumentURI(s), nil
 	}
 
 	// VS Code sends URLs with only two slashes,

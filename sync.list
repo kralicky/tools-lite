@@ -25,6 +25,7 @@
 + pkg/event/
 - pkg/event/export/
 + pkg/event/***
++ pkg/memoize/***
 + pkg/robustio/***
 + pkg/xcontext/***
 + pkg/gopathwalk/***
