@@ -1,36 +1,32 @@
-diff --git a/gopls/pkg/lsp/protocol/tsclient.go b/gopls/pkg/lsp/protocol/tsclient.go
-index b308950..6fa1a3a 100644
---- a/gopls/pkg/lsp/protocol/tsclient.go
-+++ b/gopls/pkg/lsp/protocol/tsclient.go
-@@ -14,7 +14,6 @@ import (
+diff --git a/gopls/pkg/lsp/protocol/generate/main.go b/gopls/pkg/lsp/protocol/generate/main.go
+index a00c6f5..f82cd72 100644
+--- a/gopls/pkg/lsp/protocol/generate/main.go
++++ b/gopls/pkg/lsp/protocol/generate/main.go
+@@ -101,7 +101,6 @@ func writeclient() {
  	"context"
  	"encoding/json"
  
 -	"github.com/kralicky/tools-lite/gopls/pkg/util/bug"
  	"github.com/kralicky/tools-lite/pkg/jsonrpc2"
  )
- 
-@@ -44,7 +43,6 @@ type Client interface {
- func clientDispatch(ctx context.Context, client Client, reply jsonrpc2.Replier, r jsonrpc2.Request) (bool, error) {
+ `)
+@@ -113,7 +112,6 @@ func writeclient() {
+ 	out.WriteString(`func clientDispatch(ctx context.Context, client Client, reply jsonrpc2.Replier, r jsonrpc2.Request) (bool, error) {
  	defer func() {
  		if x := recover(); x != nil {
 -			bug.Reportf("client panic in %s request", r.Method())
  			panic(x)
  		}
  	}()
-diff --git a/gopls/pkg/lsp/protocol/tsserver.go b/gopls/pkg/lsp/protocol/tsserver.go
-index c53ec90..6438f06 100644
---- a/gopls/pkg/lsp/protocol/tsserver.go
-+++ b/gopls/pkg/lsp/protocol/tsserver.go
-@@ -14,7 +14,6 @@ import (
+@@ -146,7 +144,6 @@ func writeserver() {
  	"context"
  	"encoding/json"
  
 -	"github.com/kralicky/tools-lite/gopls/pkg/util/bug"
  	"github.com/kralicky/tools-lite/pkg/jsonrpc2"
  )
- 
-@@ -98,7 +97,6 @@ type Server interface {
+ `)
+@@ -160,7 +157,6 @@ func writeserver() {
  func serverDispatch(ctx context.Context, server Server, reply jsonrpc2.Replier, r jsonrpc2.Request) (bool, error) {
  	defer func() {
  		if x := recover(); x != nil {

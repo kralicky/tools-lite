@@ -23,5 +23,5 @@ mv ./staging/go .
 rmdir ./staging
 
 git apply .patches/*.patch
-
+go generate ./gopls/pkg/lsp/protocol
 go mod tidy

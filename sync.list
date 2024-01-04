@@ -12,6 +12,8 @@
 + gopls/pkg/lsp/cache/fs_overlay.go
 + gopls/pkg/lsp/cache/fs_memoized.go
 + gopls/pkg/lsp/protocol/
++ gopls/pkg/lsp/protocol/generate/
++ gopls/pkg/lsp/protocol/generate/*
 - gopls/pkg/lsp/protocol/context.go
 + gopls/pkg/lsp/protocol/*.go
 + gopls/pkg/lsp/progress/***

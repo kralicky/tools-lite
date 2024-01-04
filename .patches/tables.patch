@@ -1,0 +1,12 @@
+diff --git a/gopls/pkg/lsp/protocol/generate/tables.go b/gopls/pkg/lsp/protocol/generate/tables.go
+index 41df9b6..d2a9547 100644
+--- a/gopls/pkg/lsp/protocol/generate/tables.go
++++ b/gopls/pkg/lsp/protocol/generate/tables.go
+@@ -61,7 +61,6 @@ var usedGoplsStar = make(map[prop]bool)
+ var renameProp = map[prop]string{
+ 	{"CancelParams", "id"}:         "interface{}",
+ 	{"Command", "arguments"}:       "[]json.RawMessage",
+-	{"CompletionItem", "textEdit"}: "TextEdit",
+ 	{"Diagnostic", "code"}:         "interface{}",
+ 	{"Diagnostic", "data"}:         "json.RawMessage", // delay unmarshalling quickfixes
+ 
