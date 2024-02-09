@@ -31,6 +31,7 @@
 + pkg/robustio/***
 + pkg/xcontext/***
 + pkg/gopathwalk/***
++ pkg/fuzzy/***
 + pkg/typeparams/
 - pkg/typeparams/enabled_go117.go
 - pkg/typeparams/typeparams_go117.go
