@@ -21,6 +21,11 @@
 + gopls/pkg/test/
 + gopls/pkg/test/integration/
 + gopls/pkg/test/integration/fake/***
++ gopls/pkg/test/integration/doc.go
++ gopls/pkg/test/integration/env.go
++ gopls/pkg/test/integration/expectation.go
++ gopls/pkg/test/integration/options.go
++ gopls/pkg/test/integration/wrappers.go
 + pkg/
 + pkg/jsonrpc2/
 + pkg/jsonrpc2/*.go

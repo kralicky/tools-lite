@@ -1,0 +1,277 @@
+diff --git a/gopls/pkg/test/integration/expectation.go b/gopls/pkg/test/integration/expectation.go
+index 99292a4..21a6f89 100644
+--- a/gopls/pkg/test/integration/expectation.go
++++ b/gopls/pkg/test/integration/expectation.go
+@@ -7,18 +7,10 @@ package integration
+ import (
+ 	"fmt"
+ 	"regexp"
+-	"sort"
+ 	"strings"
+ 
+ 	"github.com/google/go-cmp/cmp"
+ 	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+-	"github.com/kralicky/tools-lite/gopls/pkg/server"
+-)
+-
+-var (
+-	// InitialWorkspaceLoad is an expectation that the workspace initial load has
+-	// completed. It is verified via workdone reporting.
+-	InitialWorkspaceLoad = CompletedWork(server.DiagnosticWorkTitle(server.FromInitialWorkspaceLoad), 1, false)
+ )
+ 
+ // A Verdict is the result of checking an expectation against the current
+@@ -283,108 +275,6 @@ func ShownMessageRequest(messageRegexp string) Expectation {
+ 	}
+ }
+ 
+-// DoneDiagnosingChanges expects that diagnostics are complete from common
+-// change notifications: didOpen, didChange, didSave, didChangeWatchedFiles,
+-// and didClose.
+-//
+-// This can be used when multiple notifications may have been sent, such as
+-// when a didChange is immediately followed by a didSave. It is insufficient to
+-// simply await NoOutstandingWork, because the LSP client has no control over
+-// when the server starts processing a notification. Therefore, we must keep
+-// track of
+-func (e *Env) DoneDiagnosingChanges() Expectation {
+-	stats := e.Editor.Stats()
+-	statsBySource := map[server.ModificationSource]uint64{
+-		server.FromDidOpen:                stats.DidOpen,
+-		server.FromDidChange:              stats.DidChange,
+-		server.FromDidSave:                stats.DidSave,
+-		server.FromDidChangeWatchedFiles:  stats.DidChangeWatchedFiles,
+-		server.FromDidClose:               stats.DidClose,
+-		server.FromDidChangeConfiguration: stats.DidChangeConfiguration,
+-	}
+-
+-	var expected []server.ModificationSource
+-	for k, v := range statsBySource {
+-		if v > 0 {
+-			expected = append(expected, k)
+-		}
+-	}
+-
+-	// Sort for stability.
+-	sort.Slice(expected, func(i, j int) bool {
+-		return expected[i] < expected[j]
+-	})
+-
+-	var all []Expectation
+-	for _, source := range expected {
+-		all = append(all, CompletedWork(server.DiagnosticWorkTitle(source), statsBySource[source], true))
+-	}
+-
+-	return AllOf(all...)
+-}
+-
+-// AfterChange expects that the given expectations will be met after all
+-// state-changing notifications have been processed by the server.
+-//
+-// It awaits the completion of all anticipated work before checking the given
+-// expectations.
+-func (e *Env) AfterChange(expectations ...Expectation) {
+-	e.T.Helper()
+-	e.OnceMet(
+-		e.DoneDiagnosingChanges(),
+-		expectations...,
+-	)
+-}
+-
+-// DoneWithOpen expects all didOpen notifications currently sent by the editor
+-// to be completely processed.
+-func (e *Env) DoneWithOpen() Expectation {
+-	opens := e.Editor.Stats().DidOpen
+-	return CompletedWork(server.DiagnosticWorkTitle(server.FromDidOpen), opens, true)
+-}
+-
+-// StartedChange expects that the server has at least started processing all
+-// didChange notifications sent from the client.
+-func (e *Env) StartedChange() Expectation {
+-	changes := e.Editor.Stats().DidChange
+-	return StartedWork(server.DiagnosticWorkTitle(server.FromDidChange), changes)
+-}
+-
+-// DoneWithChange expects all didChange notifications currently sent by the
+-// editor to be completely processed.
+-func (e *Env) DoneWithChange() Expectation {
+-	changes := e.Editor.Stats().DidChange
+-	return CompletedWork(server.DiagnosticWorkTitle(server.FromDidChange), changes, true)
+-}
+-
+-// DoneWithSave expects all didSave notifications currently sent by the editor
+-// to be completely processed.
+-func (e *Env) DoneWithSave() Expectation {
+-	saves := e.Editor.Stats().DidSave
+-	return CompletedWork(server.DiagnosticWorkTitle(server.FromDidSave), saves, true)
+-}
+-
+-// StartedChangeWatchedFiles expects that the server has at least started
+-// processing all didChangeWatchedFiles notifications sent from the client.
+-func (e *Env) StartedChangeWatchedFiles() Expectation {
+-	changes := e.Editor.Stats().DidChangeWatchedFiles
+-	return StartedWork(server.DiagnosticWorkTitle(server.FromDidChangeWatchedFiles), changes)
+-}
+-
+-// DoneWithChangeWatchedFiles expects all didChangeWatchedFiles notifications
+-// currently sent by the editor to be completely processed.
+-func (e *Env) DoneWithChangeWatchedFiles() Expectation {
+-	changes := e.Editor.Stats().DidChangeWatchedFiles
+-	return CompletedWork(server.DiagnosticWorkTitle(server.FromDidChangeWatchedFiles), changes, true)
+-}
+-
+-// DoneWithClose expects all didClose notifications currently sent by the
+-// editor to be completely processed.
+-func (e *Env) DoneWithClose() Expectation {
+-	changes := e.Editor.Stats().DidClose
+-	return CompletedWork(server.DiagnosticWorkTitle(server.FromDidClose), changes, true)
+-}
+-
+ // StartedWork expect a work item to have been started >= atLeast times.
+ //
+ // See CompletedWork.
+@@ -513,12 +403,6 @@ func NoOutstandingWork(ignore func(title, msg string) bool) Expectation {
+ 	}
+ }
+ 
+-// IgnoreTelemetryPromptWork may be used in conjunction with NoOutStandingWork
+-// to ignore the telemetry prompt.
+-func IgnoreTelemetryPromptWork(title, msg string) bool {
+-	return title == server.TelemetryPromptWorkTitle
+-}
+-
+ // NoErrorLogs asserts that the client has not received any log messages of
+ // error severity.
+ func NoErrorLogs() Expectation {
+diff --git a/gopls/pkg/test/integration/options.go b/gopls/pkg/test/integration/options.go
+index 19cc7c4..b688f8e 100644
+--- a/gopls/pkg/test/integration/options.go
++++ b/gopls/pkg/test/integration/options.go
+@@ -12,7 +12,6 @@ import (
+ type runConfig struct {
+ 	editor    fake.EditorConfig
+ 	sandbox   fake.SandboxConfig
+-	modes     Mode
+ 	skipHooks bool
+ }
+ 
+@@ -46,20 +45,6 @@ func ProxyFiles(txt string) RunOption {
+ 	})
+ }
+ 
+-// Modes configures the execution modes that the test should run in.
+-//
+-// By default, modes are configured by the test runner. If this option is set,
+-// it overrides the set of default modes and the test runs in exactly these
+-// modes.
+-func Modes(modes Mode) RunOption {
+-	return optionSetter(func(opts *runConfig) {
+-		if opts.modes != 0 {
+-			panic("modes set more than once")
+-		}
+-		opts.modes = modes
+-	})
+-}
+-
+ // WindowsLineEndings configures the editor to use windows line endings.
+ func WindowsLineEndings() RunOption {
+ 	return optionSetter(func(opts *runConfig) {
+diff --git a/gopls/pkg/test/integration/wrappers.go b/gopls/pkg/test/integration/wrappers.go
+index e340b19..b4375de 100644
+--- a/gopls/pkg/test/integration/wrappers.go
++++ b/gopls/pkg/test/integration/wrappers.go
+@@ -8,7 +8,6 @@ import (
+ 	"encoding/json"
+ 	"path"
+ 
+-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/command"
+ 	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+ 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake"
+ 	"github.com/kralicky/tools-lite/pkg/xcontext"
+@@ -260,21 +259,6 @@ func (e *Env) DocumentHighlight(loc protocol.Location) []protocol.DocumentHighli
+ 	return highlights
+ }
+ 
+-// RunGenerate runs "go generate" in the given dir, calling t.Fatal on any error.
+-// It waits for the generate command to complete and checks for file changes
+-// before returning.
+-func (e *Env) RunGenerate(dir string) {
+-	e.T.Helper()
+-	if err := e.Editor.RunGenerate(e.Ctx, dir); err != nil {
+-		e.T.Fatal(err)
+-	}
+-	e.Await(NoOutstandingWork(IgnoreTelemetryPromptWork))
+-	// Ideally the editor.Workspace would handle all synthetic file watching, but
+-	// we help it out here as we need to wait for the generate command to
+-	// complete before checking the filesystem.
+-	e.CheckForFileChanges()
+-}
+-
+ // RunGoCommand runs the given command in the sandbox's default working
+ // directory.
+ func (e *Env) RunGoCommand(verb string, args ...string) {
+@@ -349,19 +333,19 @@ func (e *Env) CodeLens(path string) []protocol.CodeLens {
+ 
+ // ExecuteCodeLensCommand executes the command for the code lens matching the
+ // given command name.
+-func (e *Env) ExecuteCodeLensCommand(path string, cmd command.Command, result interface{}) {
++func (e *Env) ExecuteCodeLensCommand(path string, cmd string, result interface{}) {
+ 	e.T.Helper()
+ 	lenses := e.CodeLens(path)
+ 	var lens protocol.CodeLens
+ 	var found bool
+ 	for _, l := range lenses {
+-		if l.Command.Command == cmd.ID() {
++		if l.Command.Command == cmd {
+ 			lens = l
+ 			found = true
+ 		}
+ 	}
+ 	if !found {
+-		e.T.Fatalf("found no command with the ID %s", cmd.ID())
++		e.T.Fatalf("found no command with the ID %s", cmd)
+ 	}
+ 	e.ExecuteCommand(&protocol.ExecuteCommandParams{
+ 		Command:   lens.Command.Command,
+@@ -393,41 +377,6 @@ func (e *Env) ExecuteCommand(params *protocol.ExecuteCommandParams, result inter
+ 	}
+ }
+ 
+-// StartProfile starts a CPU profile with the given name, using the
+-// gopls.start_profile custom command. It calls t.Fatal on any error.
+-//
+-// The resulting stop function must be called to stop profiling (using the
+-// gopls.stop_profile custom command).
+-func (e *Env) StartProfile() (stop func() string) {
+-	// TODO(golang/go#61217): revisit the ergonomics of these command APIs.
+-	//
+-	// This would be a lot simpler if we generated params constructors.
+-	args, err := command.MarshalArgs(command.StartProfileArgs{})
+-	if err != nil {
+-		e.T.Fatal(err)
+-	}
+-	params := &protocol.ExecuteCommandParams{
+-		Command:   command.StartProfile.ID(),
+-		Arguments: args,
+-	}
+-	var result command.StartProfileResult
+-	e.ExecuteCommand(params, &result)
+-
+-	return func() string {
+-		stopArgs, err := command.MarshalArgs(command.StopProfileArgs{})
+-		if err != nil {
+-			e.T.Fatal(err)
+-		}
+-		stopParams := &protocol.ExecuteCommandParams{
+-			Command:   command.StopProfile.ID(),
+-			Arguments: stopArgs,
+-		}
+-		var result command.StopProfileResult
+-		e.ExecuteCommand(stopParams, &result)
+-		return result.File
+-	}
+-}
+-
+ // InlayHints calls textDocument/inlayHints for the given path, calling t.Fatal on
+ // any error.
+ func (e *Env) InlayHints(path string) []protocol.InlayHint {
