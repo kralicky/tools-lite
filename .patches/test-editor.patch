@@ -1,0 +1,59 @@
+diff --git a/gopls/pkg/test/integration/fake/editor.go b/gopls/pkg/test/integration/fake/editor.go
+index 50a209c..3586a3c 100644
+--- a/gopls/pkg/test/integration/fake/editor.go
++++ b/gopls/pkg/test/integration/fake/editor.go
+@@ -17,7 +17,6 @@ import (
+ 	"strings"
+ 	"sync"
+ 
+-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/command"
+ 	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+ 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake/glob"
+ 	"github.com/kralicky/tools-lite/gopls/pkg/util/pathutil"
+@@ -1043,37 +1042,6 @@ func (e *Editor) checkBufferLocation(loc protocol.Location) error {
+ 	return err
+ }
+ 
+-// RunGenerate runs `go generate` non-recursively in the workdir-relative dir
+-// path. It does not report any resulting file changes as a watched file
+-// change, so must be followed by a call to Workdir.CheckForFileChanges once
+-// the generate command has completed.
+-// TODO(rFindley): this shouldn't be necessary anymore. Delete it.
+-func (e *Editor) RunGenerate(ctx context.Context, dir string) error {
+-	if e.Server == nil {
+-		return nil
+-	}
+-	absDir := e.sandbox.Workdir.AbsPath(dir)
+-	cmd, err := command.NewGenerateCommand("", command.GenerateArgs{
+-		Dir:       protocol.URIFromPath(absDir),
+-		Recursive: false,
+-	})
+-	if err != nil {
+-		return err
+-	}
+-	params := &protocol.ExecuteCommandParams{
+-		Command:   cmd.Command,
+-		Arguments: cmd.Arguments,
+-	}
+-	if _, err := e.ExecuteCommand(ctx, params); err != nil {
+-		return fmt.Errorf("running generate: %v", err)
+-	}
+-	// Unfortunately we can't simply poll the workdir for file changes here,
+-	// because server-side command may not have completed. In integration tests, we can
+-	// Await this state change, but here we must delegate that responsibility to
+-	// the caller.
+-	return nil
+-}
+-
+ // CodeLens executes a codelens request on the server.
+ func (e *Editor) CodeLens(ctx context.Context, path string) ([]protocol.CodeLens, error) {
+ 	if e.Server == nil {
+@@ -1131,7 +1099,7 @@ func (e *Editor) AcceptCompletion(ctx context.Context, loc protocol.Location, it
+ 		return fmt.Errorf("buffer %q is not open", path)
+ 	}
+ 	return e.editBufferLocked(ctx, path, append([]protocol.TextEdit{
+-		*item.TextEdit,
++		item.TextEdit.Value.(protocol.TextEdit),
+ 	}, item.AdditionalTextEdits...))
+ }
+ 

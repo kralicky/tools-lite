@@ -16,10 +16,11 @@ rsync -av --delete-excluded --itemize-changes \
 # in staging, replace all instances of '"golang.org/x/tools/' with '"github.com/kralicky/tools-lite"
 find ./staging/ -type f -exec sed -i 's/"golang.org\/x\/tools\//\"github.com\/kralicky\/tools-lite\//g' {} \;
 
-rm -rf ./gopls ./pkg ./go
+rm -rf ./gopls ./pkg ./go ./txtar
 mv ./staging/gopls .
 mv ./staging/pkg .
 mv ./staging/go .
+mv ./staging/txtar .
 rmdir ./staging
 
 git apply .patches/*.patch
