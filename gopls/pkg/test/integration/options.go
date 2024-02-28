@@ -5,14 +5,13 @@
 package integration
 
 import (
-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake"
 )
 
 type runConfig struct {
-	editor    fake.EditorConfig
-	sandbox   fake.SandboxConfig
-	skipHooks bool
+	editor  fake.EditorConfig
+	sandbox fake.SandboxConfig
 }
 
 func defaultConfig() runConfig {
@@ -59,6 +58,13 @@ func ClientName(name string) RunOption {
 	})
 }
 
+// CapabilitiesJSON sets the capabalities json.
+func CapabilitiesJSON(capabilities []byte) RunOption {
+	return optionSetter(func(opts *runConfig) {
+		opts.editor.CapabilitiesJSON = capabilities
+	})
+}
+
 // Settings sets user-provided configuration for the LSP server.
 //
 // As a special case, the env setting must not be provided via Settings: use
@@ -83,9 +89,27 @@ func WorkspaceFolders(relFolders ...string) RunOption {
 		// Use an empty non-nil slice to signal explicitly no folders.
 		relFolders = []string{}
 	}
+
 	return optionSetter(func(opts *runConfig) {
 		opts.editor.WorkspaceFolders = relFolders
 	})
+}
+
+// FolderSettings defines per-folder workspace settings, keyed by relative path
+// to the folder.
+//
+// Use in conjunction with WorkspaceFolders to have different settings for
+// different folders.
+type FolderSettings map[string]Settings
+
+func (fs FolderSettings) set(opts *runConfig) {
+	// Re-use the Settings type, for symmetry, but translate back into maps for
+	// the editor config.
+	folders := make(map[string]map[string]any)
+	for k, v := range fs {
+		folders[k] = v
+	}
+	opts.editor.FolderSettings = folders
 }
 
 // EnvVars sets environment variables for the LSP session. When applying these

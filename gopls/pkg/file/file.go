@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 )
 
 // An Identity identifies the name and contents of a file.

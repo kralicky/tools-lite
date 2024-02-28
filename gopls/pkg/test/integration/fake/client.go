@@ -8,8 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
+	"path/filepath"
 
-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake/glob"
 )
 
@@ -97,9 +99,12 @@ func (c *Client) WorkspaceFolders(context.Context) ([]protocol.WorkspaceFolder, 
 func (c *Client) Configuration(_ context.Context, p *protocol.ParamConfiguration) ([]interface{}, error) {
 	results := make([]interface{}, len(p.Items))
 	for i, item := range p.Items {
+		if item.ScopeURI != nil && *item.ScopeURI == "" {
+			return nil, fmt.Errorf(`malformed ScopeURI ""`)
+		}
 		if item.Section == "gopls" {
 			config := c.editor.Config()
-			results[i] = makeSettings(c.editor.sandbox, config)
+			results[i] = makeSettings(c.editor.sandbox, config, item.ScopeURI)
 		}
 	}
 	return results, nil
@@ -130,8 +135,15 @@ func (c *Client) RegisterCapability(ctx context.Context, params *protocol.Regist
 			}
 			var globs []*glob.Glob
 			for _, watcher := range opts.Watchers {
+				var globPattern string
+				switch pattern := watcher.GlobPattern.Value.(type) {
+				case protocol.Pattern:
+					globPattern = pattern
+				case protocol.RelativePattern:
+					globPattern = path.Join(filepath.ToSlash(pattern.BaseURI.Path()), pattern.Pattern)
+				}
 				// TODO(rfindley): honor the watch kind.
-				g, err := glob.Parse(watcher.GlobPattern)
+				g, err := glob.Parse(globPattern)
 				if err != nil {
 					return fmt.Errorf("error parsing glob pattern %q: %v", watcher.GlobPattern, err)
 				}

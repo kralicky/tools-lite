@@ -1,19 +1,27 @@
-diff --git a/gopls/pkg/test/integration/fake/editor.go b/gopls/pkg/test/integration/fake/editor.go
-index 50a209c..3586a3c 100644
---- a/gopls/pkg/test/integration/fake/editor.go
-+++ b/gopls/pkg/test/integration/fake/editor.go
-@@ -17,7 +17,6 @@ import (
+diff --git a/gopls/internal/test/integration/fake/editor.go b/gopls/internal/test/integration/fake/editor.go
+index e93776408..7be0e1493 100644
+--- a/gopls/internal/test/integration/fake/editor.go
++++ b/gopls/internal/test/integration/fake/editor.go
+@@ -14,14 +14,13 @@ import (
+ 	"path"
+ 	"path/filepath"
+ 	"regexp"
++	"slices"
  	"strings"
  	"sync"
- 
--	"github.com/kralicky/tools-lite/gopls/pkg/lsp/command"
- 	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
- 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake/glob"
- 	"github.com/kralicky/tools-lite/gopls/pkg/util/pathutil"
-@@ -1043,37 +1042,6 @@ func (e *Editor) checkBufferLocation(loc protocol.Location) error {
+
+ 	"github.com/kralicky/tools-lite/gopls/internal/protocol"
+-	"github.com/kralicky/tools-lite/gopls/internal/protocol/command"
+ 	"github.com/kralicky/tools-lite/gopls/internal/test/integration/fake/glob"
+ 	"github.com/kralicky/tools-lite/gopls/internal/util/pathutil"
+-	"github.com/kralicky/tools-lite/gopls/internal/util/slices"
+ 	"github.com/kralicky/tools-lite/internal/jsonrpc2"
+ 	"github.com/kralicky/tools-lite/internal/jsonrpc2/servertest"
+ 	"github.com/kralicky/tools-lite/internal/xcontext"
+@@ -1106,37 +1105,6 @@ func (e *Editor) checkBufferLocation(loc protocol.Location) error {
  	return err
  }
- 
+
 -// RunGenerate runs `go generate` non-recursively in the workdir-relative dir
 -// path. It does not report any resulting file changes as a watched file
 -// change, so must be followed by a call to Workdir.CheckForFileChanges once
@@ -56,4 +64,4 @@ index 50a209c..3586a3c 100644
 +		item.TextEdit.Value.(protocol.TextEdit),
  	}, item.AdditionalTextEdits...))
  }
- 
+

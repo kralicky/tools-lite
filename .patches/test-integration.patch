@@ -1,17 +1,17 @@
-diff --git a/gopls/pkg/test/integration/expectation.go b/gopls/pkg/test/integration/expectation.go
+diff --git a/gopls/internal/test/integration/expectation.go b/gopls/internal/test/integration/expectation.go
 index 99292a4..21a6f89 100644
---- a/gopls/pkg/test/integration/expectation.go
-+++ b/gopls/pkg/test/integration/expectation.go
+--- a/gopls/internal/test/integration/expectation.go
++++ b/gopls/internal/test/integration/expectation.go
 @@ -7,18 +7,10 @@ package integration
  import (
  	"fmt"
  	"regexp"
 -	"sort"
  	"strings"
- 
+
  	"github.com/google/go-cmp/cmp"
- 	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
--	"github.com/kralicky/tools-lite/gopls/pkg/server"
+ 	"github.com/kralicky/tools-lite/gopls/internal/protocol"
+-	"github.com/kralicky/tools-lite/gopls/internal/server"
 -)
 -
 -var (
@@ -19,12 +19,12 @@ index 99292a4..21a6f89 100644
 -	// completed. It is verified via workdone reporting.
 -	InitialWorkspaceLoad = CompletedWork(server.DiagnosticWorkTitle(server.FromInitialWorkspaceLoad), 1, false)
  )
- 
+
  // A Verdict is the result of checking an expectation against the current
 @@ -283,108 +275,6 @@ func ShownMessageRequest(messageRegexp string) Expectation {
  	}
  }
- 
+
 -// DoneDiagnosingChanges expects that diagnostics are complete from common
 -// change notifications: didOpen, didChange, didSave, didChangeWatchedFiles,
 -// and didClose.
@@ -133,7 +133,7 @@ index 99292a4..21a6f89 100644
 @@ -513,12 +403,6 @@ func NoOutstandingWork(ignore func(title, msg string) bool) Expectation {
  	}
  }
- 
+
 -// IgnoreTelemetryPromptWork may be used in conjunction with NoOutStandingWork
 -// to ignore the telemetry prompt.
 -func IgnoreTelemetryPromptWork(title, msg string) bool {
@@ -143,22 +143,22 @@ index 99292a4..21a6f89 100644
  // NoErrorLogs asserts that the client has not received any log messages of
  // error severity.
  func NoErrorLogs() Expectation {
-diff --git a/gopls/pkg/test/integration/options.go b/gopls/pkg/test/integration/options.go
-index 19cc7c4..b688f8e 100644
---- a/gopls/pkg/test/integration/options.go
-+++ b/gopls/pkg/test/integration/options.go
+diff --git a/gopls/internal/test/integration/options.go b/gopls/internal/test/integration/options.go
+index f1d5425d8..1d620742b 100644
+--- a/gopls/internal/test/integration/options.go
++++ b/gopls/internal/test/integration/options.go
 @@ -12,7 +12,6 @@ import (
  type runConfig struct {
- 	editor    fake.EditorConfig
- 	sandbox   fake.SandboxConfig
--	modes     Mode
- 	skipHooks bool
+ 	editor  fake.EditorConfig
+ 	sandbox fake.SandboxConfig
+-	modes   Mode
  }
- 
-@@ -46,20 +45,6 @@ func ProxyFiles(txt string) RunOption {
+
+ func defaultConfig() runConfig {
+@@ -45,20 +44,6 @@ func ProxyFiles(txt string) RunOption {
  	})
  }
- 
+
 -// Modes configures the execution modes that the test should run in.
 -//
 -// By default, modes are configured by the test runner. If this option is set,
@@ -176,22 +176,22 @@ index 19cc7c4..b688f8e 100644
  // WindowsLineEndings configures the editor to use windows line endings.
  func WindowsLineEndings() RunOption {
  	return optionSetter(func(opts *runConfig) {
-diff --git a/gopls/pkg/test/integration/wrappers.go b/gopls/pkg/test/integration/wrappers.go
-index e340b19..b4375de 100644
---- a/gopls/pkg/test/integration/wrappers.go
-+++ b/gopls/pkg/test/integration/wrappers.go
-@@ -8,7 +8,6 @@ import (
- 	"encoding/json"
+diff --git a/gopls/internal/test/integration/wrappers.go b/gopls/internal/test/integration/wrappers.go
+index cc4a66d79..6d3cf9ef9 100644
+--- a/gopls/internal/test/integration/wrappers.go
++++ b/gopls/internal/test/integration/wrappers.go
+@@ -9,7 +9,6 @@ import (
  	"path"
- 
--	"github.com/kralicky/tools-lite/gopls/pkg/lsp/command"
- 	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
- 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake"
- 	"github.com/kralicky/tools-lite/pkg/xcontext"
+
+ 	"github.com/kralicky/tools-lite/gopls/internal/protocol"
+-	"github.com/kralicky/tools-lite/gopls/internal/protocol/command"
+ 	"github.com/kralicky/tools-lite/gopls/internal/test/integration/fake"
+ 	"github.com/kralicky/tools-lite/internal/xcontext"
+ )
 @@ -260,21 +259,6 @@ func (e *Env) DocumentHighlight(loc protocol.Location) []protocol.DocumentHighli
  	return highlights
  }
- 
+
 -// RunGenerate runs "go generate" in the given dir, calling t.Fatal on any error.
 -// It waits for the generate command to complete and checks for file changes
 -// before returning.
@@ -210,33 +210,53 @@ index e340b19..b4375de 100644
  // RunGoCommand runs the given command in the sandbox's default working
  // directory.
  func (e *Env) RunGoCommand(verb string, args ...string) {
-@@ -349,19 +333,19 @@ func (e *Env) CodeLens(path string) []protocol.CodeLens {
- 
- // ExecuteCodeLensCommand executes the command for the code lens matching the
- // given command name.
+@@ -347,28 +331,6 @@ func (e *Env) CodeLens(path string) []protocol.CodeLens {
+ 	return lens
+ }
+
+-// ExecuteCodeLensCommand executes the command for the code lens matching the
+-// given command name.
 -func (e *Env) ExecuteCodeLensCommand(path string, cmd command.Command, result interface{}) {
-+func (e *Env) ExecuteCodeLensCommand(path string, cmd string, result interface{}) {
- 	e.T.Helper()
- 	lenses := e.CodeLens(path)
- 	var lens protocol.CodeLens
- 	var found bool
- 	for _, l := range lenses {
+-	e.T.Helper()
+-	lenses := e.CodeLens(path)
+-	var lens protocol.CodeLens
+-	var found bool
+-	for _, l := range lenses {
 -		if l.Command.Command == cmd.ID() {
-+		if l.Command.Command == cmd {
- 			lens = l
- 			found = true
- 		}
- 	}
- 	if !found {
+-			lens = l
+-			found = true
+-		}
+-	}
+-	if !found {
 -		e.T.Fatalf("found no command with the ID %s", cmd.ID())
-+		e.T.Fatalf("found no command with the ID %s", cmd)
- 	}
- 	e.ExecuteCommand(&protocol.ExecuteCommandParams{
- 		Command:   lens.Command.Command,
-@@ -393,41 +377,6 @@ func (e *Env) ExecuteCommand(params *protocol.ExecuteCommandParams, result inter
+-	}
+-	e.ExecuteCommand(&protocol.ExecuteCommandParams{
+-		Command:   lens.Command.Command,
+-		Arguments: lens.Command.Arguments,
+-	}, result)
+-}
+-
+ func (e *Env) ExecuteCommand(params *protocol.ExecuteCommandParams, result interface{}) {
+ 	e.T.Helper()
+ 	response, err := e.Editor.ExecuteCommand(e.Ctx, params)
+@@ -393,55 +355,6 @@ func (e *Env) ExecuteCommand(params *protocol.ExecuteCommandParams, result inter
  	}
  }
- 
+
+-// Views returns the server's views.
+-func (e *Env) Views() []command.View {
+-	var summaries []command.View
+-	cmd, err := command.NewViewsCommand("")
+-	if err != nil {
+-		e.T.Fatal(err)
+-	}
+-	e.ExecuteCommand(&protocol.ExecuteCommandParams{
+-		Command:   cmd.Command,
+-		Arguments: cmd.Arguments,
+-	}, &summaries)
+-	return summaries
+-}
+-
 -// StartProfile starts a CPU profile with the given name, using the
 -// gopls.start_profile custom command. It calls t.Fatal on any error.
 -//

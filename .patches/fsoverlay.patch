@@ -1,28 +1,28 @@
-diff --git a/gopls/pkg/lsp/cache/fs_overlay.go b/gopls/pkg/lsp/cache/fs_overlay.go
+diff --git a/gopls/internal/cache/fs_overlay.go b/gopls/internal/cache/fs_overlay.go
 index 6d81687..e9d672d 100644
---- a/gopls/pkg/lsp/cache/fs_overlay.go
-+++ b/gopls/pkg/lsp/cache/fs_overlay.go
+--- a/gopls/internal/cache/fs_overlay.go
++++ b/gopls/internal/cache/fs_overlay.go
 @@ -6,10 +6,12 @@ package cache
- 
+
  import (
  	"context"
 +	"fmt"
  	"sync"
- 
- 	"github.com/kralicky/tools-lite/gopls/pkg/file"
- 	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
-+	"github.com/kralicky/tools-lite/pkg/xcontext"
+
+ 	"github.com/kralicky/tools-lite/gopls/internal/file"
+ 	"github.com/kralicky/tools-lite/gopls/internal/protocol"
++	"github.com/kralicky/tools-lite/internal/xcontext"
  )
- 
- // An OverlayFS is a file.Source that keeps track of overlays on top of a
-@@ -76,3 +78,111 @@ func (o *Overlay) Content() ([]byte, error) { return o.content, nil }
- func (o *Overlay) Version() int32           { return o.version }
- func (o *Overlay) SameContentsOnDisk() bool { return o.saved }
- func (o *Overlay) Kind() file.Kind          { return o.kind }
+
+ // An overlayFS is a file.Source that keeps track of overlays on top of a
+@@ -76,3 +78,111 @@ func (o *overlay) Content() ([]byte, error) { return o.content, nil }
+ func (o *overlay) Version() int32           { return o.version }
+ func (o *overlay) SameContentsOnDisk() bool { return o.saved }
+ func (o *overlay) Kind() file.Kind          { return o.kind }
 +
 +// Precondition: caller holds s.viewMu lock.
 +// TODO(rfindley): move this to fs_overlay.go.
-+func (fs *OverlayFS) UpdateOverlays(ctx context.Context, changes []file.Modification) error {
++func (fs *overlayFS) UpdateOverlays(ctx context.Context, changes []file.Modification) error {
 +	fs.mu.Lock()
 +	defer fs.mu.Unlock()
 +
@@ -88,7 +88,7 @@ index 6d81687..e9d672d 100644
 +			_, readErr := fh.Content()
 +			sameContentOnDisk = (readErr == nil && fh.Identity().Hash == hash)
 +		}
-+		o = &Overlay{
++		o = &overlay{
 +			uri:     c.URI,
 +			version: version,
 +			content: text,

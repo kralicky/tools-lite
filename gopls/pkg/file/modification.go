@@ -4,7 +4,7 @@
 
 package file
 
-import "github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+import "github.com/kralicky/tools-lite/gopls/pkg/protocol"
 
 // Modification represents a modification to a file.
 type Modification struct {

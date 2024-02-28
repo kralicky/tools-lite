@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 )
 
 // A Verdict is the result of checking an expectation against the current
@@ -390,7 +390,7 @@ func NoOutstandingWork(ignore func(title, msg string) bool) Expectation {
 				// the "begin" notification, work should not be in progress.
 				continue
 			}
-			if ignore(w.title, w.msg) {
+			if ignore != nil && ignore(w.title, w.msg) {
 				continue
 			}
 			return Unmet

@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"path"
 
-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake"
 	"github.com/kralicky/tools-lite/pkg/xcontext"
 )
@@ -329,28 +329,6 @@ func (e *Env) CodeLens(path string) []protocol.CodeLens {
 		e.T.Fatal(err)
 	}
 	return lens
-}
-
-// ExecuteCodeLensCommand executes the command for the code lens matching the
-// given command name.
-func (e *Env) ExecuteCodeLensCommand(path string, cmd string, result interface{}) {
-	e.T.Helper()
-	lenses := e.CodeLens(path)
-	var lens protocol.CodeLens
-	var found bool
-	for _, l := range lenses {
-		if l.Command.Command == cmd {
-			lens = l
-			found = true
-		}
-	}
-	if !found {
-		e.T.Fatalf("found no command with the ID %s", cmd)
-	}
-	e.ExecuteCommand(&protocol.ExecuteCommandParams{
-		Command:   lens.Command.Command,
-		Arguments: lens.Command.Arguments,
-	}, result)
 }
 
 func (e *Env) ExecuteCommand(params *protocol.ExecuteCommandParams, result interface{}) {

@@ -24,6 +24,7 @@ const (
 // A.B.C.D means that one of B or C would change to a pointer
 // so a test or initialization would be needed
 var goplsStar = map[prop]int{
+	{"AnnotatedTextEdit", "annotationId"}:  wantOptStar,
 	{"ClientCapabilities", "textDocument"}: wantOpt, // A.B.C.D at fake/editor.go:255
 	{"ClientCapabilities", "window"}:       wantOpt, // test failures
 	{"ClientCapabilities", "workspace"}:    wantOpt, // test failures
@@ -61,6 +62,7 @@ var usedGoplsStar = make(map[prop]bool)
 var renameProp = map[prop]string{
 	{"CancelParams", "id"}:         "interface{}",
 	{"Command", "arguments"}:       "[]json.RawMessage",
+	{"CodeAction", "data"}:         "json.RawMessage", // delay unmarshalling commands
 	{"Diagnostic", "code"}:         "interface{}",
 	{"Diagnostic", "data"}:         "json.RawMessage", // delay unmarshalling quickfixes
 
@@ -84,7 +86,6 @@ var renameProp = map[prop]string{
 	{"ServerCapabilities", "semanticTokensProvider"}: "interface{}",
 	// slightly tricky
 	{"ServerCapabilities", "textDocumentSync"}: "interface{}",
-	{"TextDocumentEdit", "edits"}:              "[]TextEdit",
 	{"TextDocumentSyncOptions", "save"}:        "SaveOptions",
 	{"WorkspaceEdit", "documentChanges"}:       "[]DocumentChanges",
 }
@@ -121,6 +122,8 @@ var usedDisambiguate = make(map[string]bool)
 var goplsType = map[string]string{
 	"And_RegOpt_textDocument_colorPresentation": "WorkDoneProgressOptionsAndTextDocumentRegistrationOptions",
 	"ConfigurationParams":                       "ParamConfiguration",
+	"DocumentDiagnosticParams":                  "string",
+	"DocumentDiagnosticReport":                  "string",
 	"DocumentUri":                               "DocumentURI",
 	"InitializeParams":                          "ParamInitialize",
 	"LSPAny":                                    "interface{}",
@@ -129,10 +132,9 @@ var goplsType = map[string]string{
 
 	"Or_Declaration": "[]Location",
 	"Or_DidChangeConfigurationRegistrationOptions_section": "OrPSection_workspace_didChangeConfiguration",
-	"Or_GlobPattern":                "string",
-	"Or_InlayHintLabelPart_tooltip": "OrPTooltipPLabel",
-	"Or_InlayHint_tooltip":          "OrPTooltip_textDocument_inlayHint",
-	"Or_LSPAny":                     "interface{}",
+	"Or_InlayHintLabelPart_tooltip":                        "OrPTooltipPLabel",
+	"Or_InlayHint_tooltip":                                 "OrPTooltip_textDocument_inlayHint",
+	"Or_LSPAny":                                            "interface{}",
 
 	"Or_ParameterInformation_documentation":            "string",
 	"Or_ParameterInformation_label":                    "string",
@@ -147,6 +149,7 @@ var goplsType = map[string]string{
 	"Or_Result_textDocument_typeDefinition":            "[]Location",
 	"Or_Result_workspace_symbol":                       "[]SymbolInformation",
 	"Or_TextDocumentContentChangeEvent":                "TextDocumentContentChangePartial",
+	"Or_RelativePattern_baseUri":                       "DocumentURI",
 
 	"Or_WorkspaceFoldersServerCapabilities_changeNotifications": "string",
 	"Or_WorkspaceSymbol_location":                               "OrPLocation_workspace_symbol",

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/kralicky/tools-lite/gopls/pkg/lsp/protocol"
+	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 	"github.com/kralicky/tools-lite/gopls/pkg/test/integration/fake"
 	"github.com/kralicky/tools-lite/pkg/jsonrpc2/servertest"
 )
@@ -96,17 +96,6 @@ type State struct {
 	// be string, though the spec allows for numeric tokens as well.  When work
 	// completes, it is deleted from this map.
 	work map[protocol.ProgressToken]*workProgress
-}
-
-// outstandingWork counts started but not complete work items by title.
-func (s State) outstandingWork() map[string]uint64 {
-	outstanding := make(map[string]uint64)
-	for _, work := range s.work {
-		if !work.complete {
-			outstanding[work.title]++
-		}
-	}
-	return outstanding
 }
 
 // completedWork counts complete work items by title.

@@ -1,0 +1,51 @@
+diff --git a/gopls/internal/protocol/generate/main.go b/gopls/internal/protocol/generate/main.go
+index f70c5810d..beae88342 100644
+--- a/gopls/internal/protocol/generate/main.go
++++ b/gopls/internal/protocol/generate/main.go
+@@ -109,7 +109,6 @@ func writeclient() {
+ 	}
+ 	out.WriteString("}\n\n")
+ 	out.WriteString(`func clientDispatch(ctx context.Context, client Client, reply jsonrpc2.Replier, r jsonrpc2.Request) (bool, error) {
+-	defer recoverHandlerPanic(r.Method())
+ 	switch r.Method() {
+ `)
+ 	for _, k := range ccases.keys() {
+@@ -149,7 +148,6 @@ func writeserver() {
+ }
+
+ func serverDispatch(ctx context.Context, server Server, reply jsonrpc2.Replier, r jsonrpc2.Request) (bool, error) {
+-	defer recoverHandlerPanic(r.Method())
+ 	switch r.Method() {
+ `)
+ 	for _, k := range scases.keys() {
+diff --git a/gopls/internal/protocol/protocol.go b/gopls/internal/protocol/protocol.go
+index 09bfaca2e..76a932bf8 100644
+--- a/gopls/internal/protocol/protocol.go
++++ b/gopls/internal/protocol/protocol.go
+@@ -11,8 +11,6 @@ import (
+ 	"fmt"
+ 	"io"
+
+-	"github.com/kralicky/tools-lite/gopls/internal/telemetry"
+-	"github.com/kralicky/tools-lite/gopls/internal/util/bug"
+ 	"github.com/kralicky/tools-lite/internal/event"
+ 	"github.com/kralicky/tools-lite/internal/jsonrpc2"
+ 	jsonrpc2_v2 "github.com/kralicky/tools-lite/internal/jsonrpc2_v2"
+@@ -297,17 +295,3 @@ func NonNilSlice[T comparable](x []T) []T {
+ 	}
+ 	return x
+ }
+-
+-func recoverHandlerPanic(method string) {
+-	// Report panics in the handler goroutine,
+-	// unless we have enabled the monitor,
+-	// which reports all crashes.
+-	if !telemetry.CrashMonitorSupported() {
+-		defer func() {
+-			if x := recover(); x != nil {
+-				bug.Reportf("panic in %s request", method)
+-				panic(x)
+-			}
+-		}()
+-	}
+-}

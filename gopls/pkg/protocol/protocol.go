@@ -5,6 +5,7 @@
 package protocol
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -240,7 +241,7 @@ func CancelHandler(handler jsonrpc2.Handler) jsonrpc2.Handler {
 			return handler(ctx, replyWithDetachedContext, req)
 		}
 		var params CancelParams
-		if err := json.Unmarshal(req.Params(), &params); err != nil {
+		if err := UnmarshalJSON(req.Params(), &params); err != nil {
 			return sendParseError(ctx, reply, err)
 		}
 		if n, ok := params.ID.(float64); ok {
@@ -268,6 +269,16 @@ func cancelCall(ctx context.Context, sender connSender, id jsonrpc2.ID) {
 	defer done()
 	// Note that only *jsonrpc2.ID implements json.Marshaler.
 	sender.Notify(ctx, "$/cancelRequest", &CancelParams{ID: &id})
+}
+
+// UnmarshalJSON unmarshals msg into the variable pointed to by
+// params. In JSONRPC, optional messages may be
+// "null", in which case it is a no-op.
+func UnmarshalJSON(msg json.RawMessage, v any) error {
+	if len(msg) == 0 || bytes.Equal(msg, []byte("null")) {
+		return nil
+	}
+	return json.Unmarshal(msg, v)
 }
 
 func sendParseError(ctx context.Context, reply jsonrpc2.Replier, err error) error {

@@ -17,7 +17,7 @@ import "encoding/json"
 // @since 3.16.0.
 type AnnotatedTextEdit struct {
 	// The actual identifier of the change annotation
-	AnnotationID ChangeAnnotationIdentifier `json:"annotationId"`
+	AnnotationID *ChangeAnnotationIdentifier `json:"annotationId,omitempty"`
 	TextEdit
 }
 
@@ -489,7 +489,7 @@ type CodeAction struct {
 	// a `textDocument/codeAction` and a `codeAction/resolve` request.
 	//
 	// @since 3.16.0
-	Data interface{} `json:"data,omitempty"`
+	Data *json.RawMessage `json:"data,omitempty"`
 }
 
 // The Client Capabilities of a {@link CodeActionRequest}.
@@ -1463,14 +1463,6 @@ type DocumentDiagnosticParams struct {
 	WorkDoneProgressParams
 	PartialResultParams
 }
-
-// The result of a document diagnostic pull request. A report can
-// either be a full report containing all diagnostics for the
-// requested document or an unchanged report indicating that nothing
-// has changed in terms of diagnostics in comparison to the last
-// pull request.
-//
-// @since 3.17.0
 type DocumentDiagnosticReport = Or_DocumentDiagnosticReport // (alias)
 // The document diagnostic report kinds.
 //
@@ -1774,28 +1766,6 @@ type DocumentSymbolRegistrationOptions struct {
 	TextDocumentRegistrationOptions
 	DocumentSymbolOptions
 }
-
-// A DocumentURI is the URI of a client editor document.
-//
-// Care should be taken to handle encoding in URIs. For
-// example, some clients (such as VS Code) may encode colons
-// in drive letters while others do not. The URIs below are
-// both valid, but clients and servers should be consistent
-// with the form they use themselves to ensure the other party
-// doesn’t interpret them as distinct URIs. Clients and
-// servers should not assume that each other are encoding the
-// same way (for example a client encoding colons in drive
-// letters cannot assume server responses will have encoded
-// colons). The same applies to casing of drive letters - one
-// party should not assume the other party will return paths
-// with drive letters cased the same as it.
-//
-//	file:///c:/project/readme.md
-//	file:///C%3A/project/readme.md
-//
-// This is done during JSON unmarshalling;
-// see [DocumentURI.UnmarshalText] for details.
-type DocumentURI string
 
 // Edit range variant that includes ranges for insert and replace operations.
 //
@@ -2151,7 +2121,7 @@ type GeneralClientCapabilities struct {
 // The glob pattern. Either a string pattern or a relative pattern.
 //
 // @since 3.17.0
-type GlobPattern = string // (alias)
+type GlobPattern = Or_GlobPattern // (alias)
 // The result of a hover request.
 type Hover struct {
 	// The hover's content
@@ -3138,6 +3108,11 @@ type Or_DocumentFilter struct {
 	Value interface{} `json:"value"`
 }
 
+// created for Or [Pattern RelativePattern]
+type Or_GlobPattern struct {
+	Value interface{} `json:"value"`
+}
+
 // created for Or [MarkedString MarkupContent []MarkedString]
 type Or_Hover_contents struct {
 	Value interface{} `json:"value"`
@@ -3195,11 +3170,6 @@ type Or_RelatedFullDocumentDiagnosticReport_relatedDocuments_Value struct {
 
 // created for Or [FullDocumentDiagnosticReport UnchangedDocumentDiagnosticReport]
 type Or_RelatedUnchangedDocumentDiagnosticReport_relatedDocuments_Value struct {
-	Value interface{} `json:"value"`
-}
-
-// created for Or [URI WorkspaceFolder]
-type Or_RelativePattern_baseUri struct {
 	Value interface{} `json:"value"`
 }
 
@@ -3686,7 +3656,7 @@ type RelatedUnchangedDocumentDiagnosticReport struct {
 type RelativePattern struct {
 	// A workspace folder or a base URI to which this pattern will be matched
 	// against relatively.
-	BaseURI Or_RelativePattern_baseUri `json:"baseUri"`
+	BaseURI DocumentURI `json:"baseUri"`
 	// The actual glob pattern;
 	Pattern Pattern `json:"pattern"`
 }
@@ -4544,7 +4514,7 @@ type TextDocumentEdit struct {
 	//
 	// @since 3.16.0 - support for AnnotatedTextEdit. This is guarded using a
 	// client capability.
-	Edits []TextEdit `json:"edits"`
+	Edits []Or_TextDocumentEdit_edits_Elem `json:"edits"`
 }
 
 // A document filter denotes a document by different properties like
@@ -4800,9 +4770,6 @@ type UIntCommaUInt struct {
 	Fld0 uint32 `json:"fld0"`
 	Fld1 uint32 `json:"fld1"`
 }
-
-// A URI is an arbitrary URL (e.g. https), not necessarily a file.
-type URI = string
 
 // A diagnostic report indicating that the last returned
 // report is still accurate.

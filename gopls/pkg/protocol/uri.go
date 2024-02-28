@@ -4,7 +4,10 @@
 
 package protocol
 
-// This file defines methods on DocumentURI.
+// This file declares URI, DocumentURI, and its methods.
+//
+// For the LSP definition of these types, see
+// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
 
 import (
 	"fmt"
@@ -12,7 +15,36 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"github.com/kralicky/tools-lite/gopls/pkg/util/pathutil"
 )
+
+// A DocumentURI is the URI of a client editor document.
+//
+// According to the LSP specification:
+//
+//	Care should be taken to handle encoding in URIs. For
+//	example, some clients (such as VS Code) may encode colons
+//	in drive letters while others do not. The URIs below are
+//	both valid, but clients and servers should be consistent
+//	with the form they use themselves to ensure the other party
+//	doesn’t interpret them as distinct URIs. Clients and
+//	servers should not assume that each other are encoding the
+//	same way (for example a client encoding colons in drive
+//	letters cannot assume server responses will have encoded
+//	colons). The same applies to casing of drive letters - one
+//	party should not assume the other party will return paths
+//	with drive letters cased the same as it.
+//
+//	file:///c:/project/readme.md
+//	file:///C%3A/project/readme.md
+//
+// This is done during JSON unmarshalling;
+// see [DocumentURI.UnmarshalText] for details.
+type DocumentURI string
+
+// A URI is an arbitrary URL (e.g. https), not necessarily a file.
+type URI = string
 
 // UnmarshalText implements decoding of DocumentURI values.
 //
@@ -54,13 +86,17 @@ func (uri DocumentURI) Path() string {
 	return filepath.FromSlash(filename)
 }
 
-// IsFile reports whether the URI has "file" schema.
-//
-// (This is true for all current valid DocumentURIs. The protocol spec
-// doesn't require it, but all known LSP clients identify editor
-// documents with file URIs.)
-func (uri DocumentURI) IsFile() bool {
-	return strings.HasPrefix(string(uri), "file://")
+// Dir returns the URI for the directory containing the receiver.
+func (uri DocumentURI) Dir() DocumentURI {
+	// This function could be more efficiently implemented by avoiding any call
+	// to Path(), but at least consolidates URI manipulation.
+	return URIFromPath(filepath.Dir(uri.Path()))
+}
+
+// Encloses reports whether uri's path, considered as a sequence of segments,
+// is a prefix of file's path.
+func (uri DocumentURI) Encloses(file DocumentURI) bool {
+	return pathutil.InDir(uri.Path(), file.Path())
 }
 
 func filename(uri DocumentURI) (string, error) {
@@ -111,7 +147,7 @@ func ParseDocumentURI(s string) (DocumentURI, error) {
 	}
 
 	if !strings.HasPrefix(s, "file://") {
-		return DocumentURI(s), nil
+		return "", fmt.Errorf("DocumentURI scheme is not 'file': %s", s)
 	}
 
 	// VS Code sends URLs with only two slashes,
