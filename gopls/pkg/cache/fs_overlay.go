@@ -14,24 +14,24 @@ import (
 	"github.com/kralicky/tools-lite/pkg/xcontext"
 )
 
-// An overlayFS is a file.Source that keeps track of overlays on top of a
+// An OverlayFS is a file.Source that keeps track of overlays on top of a
 // delegate FileSource.
-type overlayFS struct {
+type OverlayFS struct {
 	delegate file.Source
 
 	mu       sync.Mutex
 	overlays map[protocol.DocumentURI]*overlay
 }
 
-func newOverlayFS(delegate file.Source) *overlayFS {
-	return &overlayFS{
+func NewOverlayFS(delegate file.Source) *OverlayFS {
+	return &OverlayFS{
 		delegate: delegate,
 		overlays: make(map[protocol.DocumentURI]*overlay),
 	}
 }
 
 // Overlays returns a new unordered array of overlays.
-func (fs *overlayFS) Overlays() []*overlay {
+func (fs *OverlayFS) Overlays() []*overlay {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 	overlays := make([]*overlay, 0, len(fs.overlays))
@@ -41,7 +41,7 @@ func (fs *overlayFS) Overlays() []*overlay {
 	return overlays
 }
 
-func (fs *overlayFS) ReadFile(ctx context.Context, uri protocol.DocumentURI) (file.Handle, error) {
+func (fs *OverlayFS) ReadFile(ctx context.Context, uri protocol.DocumentURI) (file.Handle, error) {
 	fs.mu.Lock()
 	overlay, ok := fs.overlays[uri]
 	fs.mu.Unlock()
@@ -82,7 +82,7 @@ func (o *overlay) Kind() file.Kind          { return o.kind }
 
 // Precondition: caller holds s.viewMu lock.
 // TODO(rfindley): move this to fs_overlay.go.
-func (fs *overlayFS) UpdateOverlays(ctx context.Context, changes []file.Modification) error {
+func (fs *OverlayFS) UpdateOverlays(ctx context.Context, changes []file.Modification) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 

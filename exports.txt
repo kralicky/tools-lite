@@ -1,0 +1,7 @@
+"github.com/kralicky/tools-lite/gopls/pkg/cache".memoizedFS
+"github.com/kralicky/tools-lite/gopls/pkg/cache".newMemoizedFS
+"github.com/kralicky/tools-lite/gopls/pkg/cache".overlayFS
+"github.com/kralicky/tools-lite/gopls/pkg/cache".newOverlayFS
+"github.com/kralicky/tools-lite/pkg/imports".ModuleResolver.findPackage
+"github.com/kralicky/tools-lite/pkg/imports".ModuleResolver.modInfo
+"github.com/kralicky/tools-lite/pkg/imports".ModuleResolver.modInfo

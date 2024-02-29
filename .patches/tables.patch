@@ -1,8 +1,8 @@
 diff --git a/gopls/internal/protocol/generate/tables.go b/gopls/internal/protocol/generate/tables.go
-index 41df9b6..d2a9547 100644
+index 5182bc2..6bc437a 100644
 --- a/gopls/internal/protocol/generate/tables.go
 +++ b/gopls/internal/protocol/generate/tables.go
-@@ -61,7 +61,6 @@ var usedGoplsStar = make(map[prop]bool)
+@@ -62,7 +62,6 @@ var usedGoplsStar = make(map[prop]bool)
  var renameProp = map[prop]string{
  	{"CancelParams", "id"}:         "interface{}",
  	{"Command", "arguments"}:       "[]json.RawMessage",
@@ -10,4 +10,12 @@ index 41df9b6..d2a9547 100644
  	{"CodeAction", "data"}:         "json.RawMessage", // delay unmarshalling commands
  	{"Diagnostic", "code"}:         "interface{}",
  	{"Diagnostic", "data"}:         "json.RawMessage", // delay unmarshalling quickfixes
-
+@@ -123,8 +122,6 @@ var usedDisambiguate = make(map[string]bool)
+ var goplsType = map[string]string{
+ 	"And_RegOpt_textDocument_colorPresentation": "WorkDoneProgressOptionsAndTextDocumentRegistrationOptions",
+ 	"ConfigurationParams":                       "ParamConfiguration",
+-	"DocumentDiagnosticParams":                  "string",
+-	"DocumentDiagnosticReport":                  "string",
+ 	"DocumentUri":                               "DocumentURI",
+ 	"InitializeParams":                          "ParamInitialize",
+ 	"LSPAny":                                    "interface{}",

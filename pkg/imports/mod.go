@@ -17,10 +17,10 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/mod/module"
 	"github.com/kralicky/tools-lite/pkg/event"
 	"github.com/kralicky/tools-lite/pkg/gocommand"
 	"github.com/kralicky/tools-lite/pkg/gopathwalk"
+	"golang.org/x/mod/module"
 )
 
 // Notes(rfindley): ModuleResolver appears to be heavily optimized for scanning
@@ -336,10 +336,10 @@ func (e *ProcessEnv) UpdateResolver(r Resolver) {
 	e.resolverErr = nil
 }
 
-// findPackage returns the module and directory from within the main modules
+// FindPackage returns the module and directory from within the main modules
 // and their dependencies that contains the package at the given import path,
 // or returns nil, "" if no module is in scope.
-func (r *ModuleResolver) findPackage(importPath string) (*gocommand.ModuleJSON, string) {
+func (r *ModuleResolver) FindPackage(importPath string) (*gocommand.ModuleJSON, string) {
 	// This can't find packages in the stdlib, but that's harmless for all
 	// the existing code paths.
 	for _, m := range r.modsByModPath {
@@ -465,7 +465,7 @@ func (r *ModuleResolver) dirIsNestedModule(dir string, mod *gocommand.ModuleJSON
 		// The /vendor pseudomodule is flattened and doesn't actually count.
 		return false
 	}
-	modDir, _ := r.modInfo(dir)
+	modDir, _ := r.ModInfo(dir)
 	if modDir == "" {
 		return false
 	}
@@ -480,7 +480,7 @@ func readModName(modFile string) string {
 	return modulePath(modBytes)
 }
 
-func (r *ModuleResolver) modInfo(dir string) (modDir, modName string) {
+func (r *ModuleResolver) ModInfo(dir string) (modDir, modName string) {
 	if r.dirInModuleCache(dir) {
 		if matches := modCacheRegexp.FindStringSubmatch(dir); len(matches) == 3 {
 			index := strings.Index(dir, matches[1]+"@"+matches[2])
@@ -517,7 +517,7 @@ func (r *ModuleResolver) loadPackageNames(importPaths []string, srcDir string) (
 	names := map[string]string{}
 	for _, path := range importPaths {
 		// TODO(rfindley): shouldn't this use the dirInfoCache?
-		_, packageDir := r.findPackage(path)
+		_, packageDir := r.FindPackage(path)
 		if packageDir == "" {
 			continue
 		}
@@ -635,7 +635,7 @@ func (r *ModuleResolver) scoreImportPath(ctx context.Context, path string) float
 	if _, ok := stdlib[path]; ok {
 		return MaxRelevance
 	}
-	mod, _ := r.findPackage(path)
+	mod, _ := r.FindPackage(path)
 	return modRelevance(mod)
 }
 
@@ -704,7 +704,7 @@ func (r *ModuleResolver) canonicalize(info directoryPackageInfo) (*pkg, error) {
 	}
 	// We may have discovered a package that has a different version
 	// in scope already. Canonicalize to that one if possible.
-	if _, canonicalDir := r.findPackage(importPath); canonicalDir != "" {
+	if _, canonicalDir := r.FindPackage(importPath); canonicalDir != "" {
 		res.dir = canonicalDir
 	}
 	return res, nil
@@ -754,7 +754,7 @@ func (r *ModuleResolver) scanDirForPackage(root gopathwalk.Root, dir string) dir
 		importPath = path.Join(modPath, filepath.ToSlash(matches[3]))
 	}
 
-	modDir, modName := r.modInfo(dir)
+	modDir, modName := r.ModInfo(dir)
 	result := directoryPackageInfo{
 		status:                 directoryScanned,
 		dir:                    dir,

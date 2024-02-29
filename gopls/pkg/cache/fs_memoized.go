@@ -17,8 +17,8 @@ import (
 	"github.com/kralicky/tools-lite/pkg/robustio"
 )
 
-// A memoizedFS is a file source that memoizes reads, to reduce IO.
-type memoizedFS struct {
+// A MemoizedFS is a file source that memoizes reads, to reduce IO.
+type MemoizedFS struct {
 	mu sync.Mutex
 
 	// filesByID maps existing file inodes to the result of a read.
@@ -27,8 +27,8 @@ type memoizedFS struct {
 	filesByID map[robustio.FileID][]*diskFile
 }
 
-func newMemoizedFS() *memoizedFS {
-	return &memoizedFS{filesByID: make(map[robustio.FileID][]*diskFile)}
+func NewMemoizedFS() *MemoizedFS {
+	return &MemoizedFS{filesByID: make(map[robustio.FileID][]*diskFile)}
 }
 
 // A diskFile is a file in the filesystem, or a failure to read one.
@@ -55,7 +55,7 @@ func (h *diskFile) Version() int32           { return 0 }
 func (h *diskFile) Content() ([]byte, error) { return h.content, h.err }
 
 // ReadFile stats and (maybe) reads the file, updates the cache, and returns it.
-func (fs *memoizedFS) ReadFile(ctx context.Context, uri protocol.DocumentURI) (file.Handle, error) {
+func (fs *MemoizedFS) ReadFile(ctx context.Context, uri protocol.DocumentURI) (file.Handle, error) {
 	id, mtime, err := robustio.GetFileID(uri.Path())
 	if err != nil {
 		// file does not exist
@@ -118,7 +118,7 @@ func (fs *memoizedFS) ReadFile(ctx context.Context, uri protocol.DocumentURI) (f
 
 // fileStats returns information about the set of files stored in fs. It is
 // intended for debugging only.
-func (fs *memoizedFS) fileStats() (files, largest, errs int) {
+func (fs *MemoizedFS) fileStats() (files, largest, errs int) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 

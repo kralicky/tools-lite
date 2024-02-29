@@ -99,6 +99,15 @@ func (uri DocumentURI) Encloses(file DocumentURI) bool {
 	return pathutil.InDir(uri.Path(), file.Path())
 }
 
+// IsFile reports whether the URI has "file" schema.
+//
+// (This is true for all current valid DocumentURIs. The protocol spec
+// doesn't require it, but all known LSP clients identify editor
+// documents with file URIs.)
+func (uri DocumentURI) IsFile() bool {
+	return strings.HasPrefix(string(uri), "file://")
+}
+
 func filename(uri DocumentURI) (string, error) {
 	if uri == "" {
 		return "", nil
@@ -147,7 +156,7 @@ func ParseDocumentURI(s string) (DocumentURI, error) {
 	}
 
 	if !strings.HasPrefix(s, "file://") {
-		return "", fmt.Errorf("DocumentURI scheme is not 'file': %s", s)
+		return DocumentURI(s), nil
 	}
 
 	// VS Code sends URLs with only two slashes,
