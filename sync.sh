@@ -24,7 +24,7 @@ mv ./staging/go .
 mv ./staging/txtar .
 rmdir ./staging
 
-git apply .patches/*.patch
+git apply -v .patches/*.patch
 go generate ./gopls/internal/protocol
 
 ./cmd/internal2pkg/internal2pkg ./internal

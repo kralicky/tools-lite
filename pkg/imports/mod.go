@@ -20,6 +20,7 @@ import (
 	"github.com/kralicky/tools-lite/pkg/event"
 	"github.com/kralicky/tools-lite/pkg/gocommand"
 	"github.com/kralicky/tools-lite/pkg/gopathwalk"
+	"github.com/kralicky/tools-lite/pkg/stdlib"
 	"golang.org/x/mod/module"
 )
 
@@ -412,7 +413,7 @@ func (r *ModuleResolver) cachePackageName(info directoryPackageInfo) (string, er
 	return r.otherCache.CachePackageName(info)
 }
 
-func (r *ModuleResolver) cacheExports(ctx context.Context, env *ProcessEnv, info directoryPackageInfo) (string, []string, error) {
+func (r *ModuleResolver) cacheExports(ctx context.Context, env *ProcessEnv, info directoryPackageInfo) (string, []stdlib.Symbol, error) {
 	if info.rootType == gopathwalk.RootModuleCache {
 		return r.moduleCacheCache.CacheExports(ctx, env, info)
 	}
@@ -632,7 +633,7 @@ func (r *ModuleResolver) scan(ctx context.Context, callback *scanCallback) error
 }
 
 func (r *ModuleResolver) scoreImportPath(ctx context.Context, path string) float64 {
-	if _, ok := stdlib[path]; ok {
+	if stdlib.HasPackage(path) {
 		return MaxRelevance
 	}
 	mod, _ := r.FindPackage(path)
@@ -710,7 +711,7 @@ func (r *ModuleResolver) canonicalize(info directoryPackageInfo) (*pkg, error) {
 	return res, nil
 }
 
-func (r *ModuleResolver) loadExports(ctx context.Context, pkg *pkg, includeTest bool) (string, []string, error) {
+func (r *ModuleResolver) loadExports(ctx context.Context, pkg *pkg, includeTest bool) (string, []stdlib.Symbol, error) {
 	if info, ok := r.cacheLoad(pkg.dir); ok && !includeTest {
 		return r.cacheExports(ctx, r.env, info)
 	}

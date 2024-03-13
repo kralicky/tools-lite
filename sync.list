@@ -25,6 +25,8 @@
 + gopls/internal/test/integration/expectation.go
 + gopls/internal/test/integration/options.go
 + gopls/internal/test/integration/wrappers.go
++ gopls/internal/test/compare/
++ gopls/internal/test/compare/*.go
 + internal/
 + internal/jsonrpc2/
 + internal/jsonrpc2/*.go
@@ -42,6 +44,7 @@
 + internal/xcontext/***
 + internal/gopathwalk/***
 + internal/fuzzy/***
++ internal/stdlib/***
 + internal/typeparams/
 - internal/typeparams/enabled_go117.go
 - internal/typeparams/typeparams_go117.go
@@ -49,6 +52,7 @@
 - internal/typeparams/go118.go
 + internal/typeparams/*.go
 + internal/typesinternal/
+- internal/typesinternal/toonew.go
 + internal/typesinternal/*.go
 + internal/aliases/
 + internal/aliases/*.go
@@ -66,5 +70,7 @@
 + go/ast/
 + go/ast/astutil/
 + go/ast/astutil/*.go
++ go/expect/
++ go/expect/*.go
 + txtar/
 + txtar/*.go
