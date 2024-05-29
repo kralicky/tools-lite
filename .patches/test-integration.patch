@@ -1,5 +1,5 @@
 diff --git a/gopls/internal/test/integration/expectation.go b/gopls/internal/test/integration/expectation.go
-index 99292a4..21a6f89 100644
+index 858daeee1..365c76f55 100644
 --- a/gopls/internal/test/integration/expectation.go
 +++ b/gopls/internal/test/integration/expectation.go
 @@ -7,18 +7,10 @@ package integration
@@ -21,7 +21,7 @@ index 99292a4..21a6f89 100644
  )
 
  // A Verdict is the result of checking an expectation against the current
-@@ -283,108 +275,6 @@ func ShownMessageRequest(messageRegexp string) Expectation {
+@@ -300,113 +292,6 @@ func ShownMessageRequest(messageRegexp string) Expectation {
  	}
  }
 
@@ -67,9 +67,14 @@ index 99292a4..21a6f89 100644
 -
 -// AfterChange expects that the given expectations will be met after all
 -// state-changing notifications have been processed by the server.
--//
--// It awaits the completion of all anticipated work before checking the given
--// expectations.
+-// Specifically, it awaits the awaits completion of the process of diagnosis
+-// after the following notifications, before checking the given expectations:
+-//   - textDocument/didOpen
+-//   - textDocument/didChange
+-//   - textDocument/didSave
+-//   - textDocument/didClose
+-//   - workspace/didChangeWatchedFiles
+-//   - workspace/didChangeConfiguration
 -func (e *Env) AfterChange(expectations ...Expectation) {
 -	e.T.Helper()
 -	e.OnceMet(
@@ -130,7 +135,7 @@ index 99292a4..21a6f89 100644
  // StartedWork expect a work item to have been started >= atLeast times.
  //
  // See CompletedWork.
-@@ -513,12 +403,6 @@ func NoOutstandingWork(ignore func(title, msg string) bool) Expectation {
+@@ -535,12 +420,6 @@ func NoOutstandingWork(ignore func(title, msg string) bool) Expectation {
  	}
  }
 
@@ -144,18 +149,18 @@ index 99292a4..21a6f89 100644
  // error severity.
  func NoErrorLogs() Expectation {
 diff --git a/gopls/internal/test/integration/options.go b/gopls/internal/test/integration/options.go
-index f1d5425d8..1d620742b 100644
+index d6c21e6af..9d142db02 100644
 --- a/gopls/internal/test/integration/options.go
 +++ b/gopls/internal/test/integration/options.go
 @@ -12,7 +12,6 @@ import (
  type runConfig struct {
- 	editor  fake.EditorConfig
- 	sandbox fake.SandboxConfig
--	modes   Mode
+ 	editor        fake.EditorConfig
+ 	sandbox       fake.SandboxConfig
+-	modes         Mode
+ 	noLogsOnError bool
+ 	writeGoSum    []string
  }
-
- func defaultConfig() runConfig {
-@@ -45,20 +44,6 @@ func ProxyFiles(txt string) RunOption {
+@@ -58,20 +57,6 @@ func WriteGoSum(dirs ...string) RunOption {
  	})
  }
 
@@ -173,8 +178,8 @@ index f1d5425d8..1d620742b 100644
 -	})
 -}
 -
- // WindowsLineEndings configures the editor to use windows line endings.
- func WindowsLineEndings() RunOption {
+ // NoLogsOnError turns off dumping the LSP logs on test failures.
+ func NoLogsOnError() RunOption {
  	return optionSetter(func(opts *runConfig) {
 diff --git a/gopls/internal/test/integration/wrappers.go b/gopls/internal/test/integration/wrappers.go
 index cc4a66d79..6d3cf9ef9 100644

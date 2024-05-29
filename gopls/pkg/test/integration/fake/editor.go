@@ -29,7 +29,6 @@ import (
 // Editor is a fake client editor.  It keeps track of client state and can be
 // used for writing LSP tests.
 type Editor struct {
-
 	// Server, client, and sandbox are concurrency safe and written only
 	// at construction time, so do not require synchronization.
 	Server     protocol.Server
@@ -91,10 +90,12 @@ type EditorConfig struct {
 	// directory.
 	Env map[string]string
 
-	// WorkspaceFolders is the workspace folders to configure on the LSP server,
-	// relative to the sandbox workdir.
+	// WorkspaceFolders is the workspace folders to configure on the LSP server.
+	// Each workspace folder is a file path relative to the sandbox workdir, or
+	// a uri (used when testing behavior with virtual file system or non-'file'
+	// scheme document uris).
 	//
-	// As a special case, if WorkspaceFolders is nil the editor defaults to
+	// As special cases, if WorkspaceFolders is nil the editor defaults to
 	// configuring a single workspace folder corresponding to the workdir root.
 	// To explicitly send no workspace folders, use an empty (non-nil) slice.
 	WorkspaceFolders []string
@@ -147,14 +148,14 @@ func NewEditor(sandbox *Sandbox, config EditorConfig) *Editor {
 // It returns the editor, so that it may be called as follows:
 //
 //	editor, err := NewEditor(s).Connect(ctx, conn, hooks)
-func (e *Editor) Connect(ctx context.Context, connector servertest.Connector, hooks ClientHooks, skipApplyEdits bool) (*Editor, error) {
+func (e *Editor) Connect(ctx context.Context, connector servertest.Connector, hooks ClientHooks) (*Editor, error) {
 	bgCtx, cancelConn := context.WithCancel(xcontext.Detach(ctx))
 	conn := connector.Connect(bgCtx)
 	e.cancelConn = cancelConn
 
 	e.serverConn = conn
 	e.Server = protocol.ServerDispatcher(conn)
-	e.client = &Client{editor: e, hooks: hooks, skipApplyEdits: skipApplyEdits}
+	e.client = &Client{editor: e, hooks: hooks}
 	conn.Go(bgCtx,
 		protocol.Handlers(
 			protocol.ClientHandler(e.client,
@@ -394,6 +395,9 @@ func (e *Editor) HasCommand(id string) bool {
 	return false
 }
 
+// Examples: https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+var uriRE = regexp.MustCompile(`^[a-z][a-z0-9+\-.]*://\S+`)
+
 // makeWorkspaceFolders creates a slice of workspace folders to use for
 // this editing session, based on the editor configuration.
 func makeWorkspaceFolders(sandbox *Sandbox, paths []string) (folders []protocol.WorkspaceFolder) {
@@ -402,7 +406,10 @@ func makeWorkspaceFolders(sandbox *Sandbox, paths []string) (folders []protocol.
 	}
 
 	for _, path := range paths {
-		uri := string(sandbox.Workdir.URI(path))
+		uri := path
+		if !uriRE.MatchString(path) { // relative file path
+			uri = string(sandbox.Workdir.URI(path))
+		}
 		folders = append(folders, protocol.WorkspaceFolder{
 			URI:  uri,
 			Name: filepath.Base(uri),
@@ -593,6 +600,7 @@ func languageID(p string, fileAssociations map[string]string) protocol.LanguageK
 }
 
 // CloseBuffer removes the current buffer (regardless of whether it is saved).
+// CloseBuffer returns an error if the buffer is not open.
 func (e *Editor) CloseBuffer(ctx context.Context, path string) error {
 	e.mu.Lock()
 	_, ok := e.buffers[path]
@@ -1244,16 +1252,11 @@ func (e *Editor) Rename(ctx context.Context, loc protocol.Location, newName stri
 		Position:     loc.Range.Start,
 		NewName:      newName,
 	}
-	wsEdits, err := e.Server.Rename(ctx, params)
+	wsedit, err := e.Server.Rename(ctx, params)
 	if err != nil {
 		return err
 	}
-	for _, change := range wsEdits.DocumentChanges {
-		if err := e.applyDocumentChange(ctx, change); err != nil {
-			return err
-		}
-	}
-	return nil
+	return e.applyWorkspaceEdit(ctx, wsedit)
 }
 
 // Implementations returns implementations for the object at loc, as
@@ -1360,17 +1363,47 @@ func (e *Editor) renameBuffers(oldPath, newPath string) (closed []protocol.TextD
 	return closed, opened, nil
 }
 
-func (e *Editor) applyDocumentChange(ctx context.Context, change protocol.DocumentChanges) error {
-	if change.RenameFile != nil {
-		oldPath := e.sandbox.Workdir.URIToPath(change.RenameFile.OldURI)
-		newPath := e.sandbox.Workdir.URIToPath(change.RenameFile.NewURI)
+// applyWorkspaceEdit applies the sequence of document changes in
+// wsedit to the Editor.
+//
+// See also:
+//   - changedFiles in ../../marker/marker_test.go for the
+//     handler used by the marker test to intercept edits.
+//   - cmdClient.applyWorkspaceEdit in ../../../cmd/cmd.go for the
+//     CLI variant.
+func (e *Editor) applyWorkspaceEdit(ctx context.Context, wsedit *protocol.WorkspaceEdit) error {
+	uriToPath := e.sandbox.Workdir.URIToPath
 
-		return e.RenameFile(ctx, oldPath, newPath)
+	for _, change := range wsedit.DocumentChanges {
+		switch {
+		case change.TextDocumentEdit != nil:
+			if err := e.applyTextDocumentEdit(ctx, *change.TextDocumentEdit); err != nil {
+				return err
+			}
+
+		case change.RenameFile != nil:
+			old := uriToPath(change.RenameFile.OldURI)
+			new := uriToPath(change.RenameFile.NewURI)
+			return e.RenameFile(ctx, old, new)
+
+		case change.CreateFile != nil:
+			path := uriToPath(change.CreateFile.URI)
+			if err := e.CreateBuffer(ctx, path, ""); err != nil {
+				return err // e.g. already exists
+			}
+
+		case change.DeleteFile != nil:
+			path := uriToPath(change.CreateFile.URI)
+			_ = e.CloseBuffer(ctx, path) // returns error if not open
+			if err := e.sandbox.Workdir.RemoveFile(ctx, path); err != nil {
+				return err // e.g. doesn't exist
+			}
+
+		default:
+			return fmt.Errorf("invalid DocumentChange")
+		}
 	}
-	if change.TextDocumentEdit != nil {
-		return e.applyTextDocumentEdit(ctx, *change.TextDocumentEdit)
-	}
-	panic("Internal error: one of RenameFile or TextDocumentEdit must be set")
+	return nil
 }
 
 func (e *Editor) applyTextDocumentEdit(ctx context.Context, change protocol.TextDocumentEdit) error {

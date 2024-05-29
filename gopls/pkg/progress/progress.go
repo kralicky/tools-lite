@@ -16,9 +16,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/kralicky/tools-lite/gopls/pkg/label"
 	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 	"github.com/kralicky/tools-lite/pkg/event"
-	"github.com/kralicky/tools-lite/pkg/event/tag"
 	"github.com/kralicky/tools-lite/pkg/xcontext"
 )
 
@@ -267,7 +267,7 @@ type eventWriter struct {
 }
 
 func (ew *eventWriter) Write(p []byte) (n int, err error) {
-	event.Log(ew.ctx, string(p), tag.Operation.Of(ew.operation))
+	event.Log(ew.ctx, string(p), label.Operation.Of(ew.operation))
 	return len(p), nil
 }
 

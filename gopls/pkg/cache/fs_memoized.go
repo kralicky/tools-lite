@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/kralicky/tools-lite/gopls/pkg/file"
+	"github.com/kralicky/tools-lite/gopls/pkg/label"
 	"github.com/kralicky/tools-lite/gopls/pkg/protocol"
 	"github.com/kralicky/tools-lite/pkg/event"
-	"github.com/kralicky/tools-lite/pkg/event/tag"
 	"github.com/kralicky/tools-lite/pkg/robustio"
 )
 
@@ -149,7 +149,7 @@ func readFile(ctx context.Context, uri protocol.DocumentURI, mtime time.Time) (*
 	}
 	defer func() { <-ioLimit }()
 
-	ctx, done := event.Start(ctx, "cache.readFile", tag.File.Of(uri.Path()))
+	ctx, done := event.Start(ctx, "cache.readFile", label.File.Of(uri.Path()))
 	_ = ctx
 	defer done()
 

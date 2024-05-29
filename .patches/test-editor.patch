@@ -1,8 +1,8 @@
 diff --git a/gopls/internal/test/integration/fake/editor.go b/gopls/internal/test/integration/fake/editor.go
-index e93776408..7be0e1493 100644
+index 0cddf6b18..e1bc57097 100644
 --- a/gopls/internal/test/integration/fake/editor.go
 +++ b/gopls/internal/test/integration/fake/editor.go
-@@ -14,14 +14,13 @@ import (
+@@ -14,15 +14,13 @@ import (
  	"path"
  	"path/filepath"
  	"regexp"
@@ -13,12 +13,21 @@ index e93776408..7be0e1493 100644
  	"github.com/kralicky/tools-lite/gopls/internal/protocol"
 -	"github.com/kralicky/tools-lite/gopls/internal/protocol/command"
  	"github.com/kralicky/tools-lite/gopls/internal/test/integration/fake/glob"
+-	"github.com/kralicky/tools-lite/gopls/internal/util/bug"
  	"github.com/kralicky/tools-lite/gopls/internal/util/pathutil"
 -	"github.com/kralicky/tools-lite/gopls/internal/util/slices"
  	"github.com/kralicky/tools-lite/internal/jsonrpc2"
  	"github.com/kralicky/tools-lite/internal/jsonrpc2/servertest"
  	"github.com/kralicky/tools-lite/internal/xcontext"
-@@ -1106,37 +1105,6 @@ func (e *Editor) checkBufferLocation(loc protocol.Location) error {
+@@ -31,7 +29,6 @@ import (
+ // Editor is a fake client editor.  It keeps track of client state and can be
+ // used for writing LSP tests.
+ type Editor struct {
+-
+ 	// Server, client, and sandbox are concurrency safe and written only
+ 	// at construction time, so do not require synchronization.
+ 	Server     protocol.Server
+@@ -1116,37 +1113,6 @@ func (e *Editor) checkBufferLocation(loc protocol.Location) error {
  	return err
  }
 
@@ -56,7 +65,7 @@ index e93776408..7be0e1493 100644
  // CodeLens executes a codelens request on the server.
  func (e *Editor) CodeLens(ctx context.Context, path string) ([]protocol.CodeLens, error) {
  	if e.Server == nil {
-@@ -1131,7 +1099,7 @@ func (e *Editor) AcceptCompletion(ctx context.Context, loc protocol.Location, it
+@@ -1204,7 +1170,7 @@ func (e *Editor) AcceptCompletion(ctx context.Context, loc protocol.Location, it
  		return fmt.Errorf("buffer %q is not open", path)
  	}
  	return e.editBufferLocked(ctx, path, append([]protocol.TextEdit{
@@ -65,3 +74,12 @@ index e93776408..7be0e1493 100644
  	}, item.AdditionalTextEdits...))
  }
 
+@@ -1434,7 +1400,7 @@ func (e *Editor) applyWorkspaceEdit(ctx context.Context, wsedit *protocol.Worksp
+ 			}
+
+ 		default:
+-			return bug.Errorf("invalid DocumentChange")
++			return fmt.Errorf("invalid DocumentChange")
+ 		}
+ 	}
+ 	return nil

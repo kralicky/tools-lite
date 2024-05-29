@@ -8,6 +8,7 @@
 + gopls/internal/util/pathutil/***
 + gopls/internal/util/
 + gopls/internal/file/***
++ gopls/internal/label/***
 + gopls/internal/cache/
 + gopls/internal/cache/fs_overlay.go
 + gopls/internal/cache/fs_memoized.go

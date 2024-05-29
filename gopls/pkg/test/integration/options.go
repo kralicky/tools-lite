@@ -10,8 +10,10 @@ import (
 )
 
 type runConfig struct {
-	editor  fake.EditorConfig
-	sandbox fake.SandboxConfig
+	editor        fake.EditorConfig
+	sandbox       fake.SandboxConfig
+	noLogsOnError bool
+	writeGoSum    []string
 }
 
 func defaultConfig() runConfig {
@@ -41,6 +43,24 @@ func (f optionSetter) set(opts *runConfig) {
 func ProxyFiles(txt string) RunOption {
 	return optionSetter(func(opts *runConfig) {
 		opts.sandbox.ProxyFiles = fake.UnpackTxt(txt)
+	})
+}
+
+// WriteGoSum causes the environment to write a go.sum file for the requested
+// relative directories (via `go list -mod=mod`), before starting gopls.
+//
+// Useful for tests that use ProxyFiles, but don't care about crafting the
+// go.sum content.
+func WriteGoSum(dirs ...string) RunOption {
+	return optionSetter(func(opts *runConfig) {
+		opts.writeGoSum = dirs
+	})
+}
+
+// NoLogsOnError turns off dumping the LSP logs on test failures.
+func NoLogsOnError() RunOption {
+	return optionSetter(func(opts *runConfig) {
+		opts.noLogsOnError = true
 	})
 }
 
@@ -80,8 +100,8 @@ func (s Settings) set(opts *runConfig) {
 	}
 }
 
-// WorkspaceFolders configures the workdir-relative workspace folders to send
-// to the LSP server. By default the editor sends a single workspace folder
+// WorkspaceFolders configures the workdir-relative workspace folders or uri
+// to send to the LSP server. By default the editor sends a single workspace folder
 // corresponding to the workdir root. To explicitly configure no workspace
 // folders, use WorkspaceFolders with no arguments.
 func WorkspaceFolders(relFolders ...string) RunOption {
